@@ -1,0 +1,177 @@
+// Gelişmiş Kripto Rulet Oyunu
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kripto Rulet</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #222;
+      color: white;
+    }
+    .roulette-table {
+      display: flex;
+      flex-wrap: wrap;
+      width: 300px;
+      margin: 20px auto;
+      gap: 2px;
+    }
+    .cell {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      border-radius: 3px;
+      font-size: 14px;
+    }
+    .red { background-color: red; }
+    .black { background-color: black; color: white; }
+    .green { background-color: green; }
+    .controls {
+      margin: 20px auto;
+    }
+    .ball {
+      margin-top: 10px;
+      font-size: 24px;
+    }
+    .bet-options {
+      display: none;
+      margin: 10px 0;
+    }
+    .bet-options input,
+    .bet-options button {
+      margin: 5px;
+    }
+    input[type="number"] {
+      width: 100px;
+    }
+    .result-box {
+      border: 2px solid white;
+      margin: 20px auto;
+      padding: 20px;
+      font-size: 20px;
+      width: 60%;
+      background-color: #444;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎲 Kripto Rulet 🎲</h1>
+  <p>Bakiye: <span id="balance">100</span> BTC</p>
+  <div class="roulette-table" id="roulette"></div>
+
+  <div class="controls">
+    <p>Bahis türü:
+      <select id="betType" onchange="showBetOptions()">
+        <option value="number">Sayı</option>
+        <option value="color">Renk</option>
+        <option value="parity">Çift/Tek</option>
+      </select>
+    </p>
+
+    <div id="numberInput" class="bet-options">
+      Sayı: <input type="number" id="numberBet" min="0" max="36" />
+    </div>
+    <div id="colorInput" class="bet-options">
+      <button onclick="setColorBet('kırmızı')">🔴 Kırmızı</button>
+      <button onclick="setColorBet('siyah')">⚫ Siyah</button>
+      <button onclick="setColorBet('yeşil')">🟢 Yeşil</button>
+    </div>
+    <div id="parityInput" class="bet-options">
+      <button onclick="setParityBet('tek')">Tek</button>
+      <button onclick="setParityBet('çift')">Çift</button>
+    </div>
+
+    Bahis miktarı (BTC): <input type="number" id="betAmount" value="1" min="1" max="100" /><br/><br/>
+    <button onclick="spinRoulette()">Döndür</button>
+    <div id="ball"></div>
+    <div id="resultBox" class="result-box" style="display:none;"></div>
+  </div>
+
+  <script>
+    let balance = 100;
+    let currentBet = '';
+    const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+    const blackNumbers = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
+
+    const roulette = document.getElementById('roulette');
+    for (let i = 0; i <= 36; i++) {
+      const div = document.createElement('div');
+      div.classList.add('cell');
+      div.textContent = i;
+      if (i === 0) div.classList.add('green');
+      else if (redNumbers.includes(i)) div.classList.add('red');
+      else div.classList.add('black');
+      roulette.appendChild(div);
+    }
+
+    function showBetOptions() {
+      document.querySelectorAll('.bet-options').forEach(el => el.style.display = 'none');
+      const betType = document.getElementById('betType').value;
+      if (betType === 'number') document.getElementById('numberInput').style.display = 'block';
+      if (betType === 'color') document.getElementById('colorInput').style.display = 'block';
+      if (betType === 'parity') document.getElementById('parityInput').style.display = 'block';
+    }
+
+    function setColorBet(color) {
+      currentBet = color;
+    }
+
+    function setParityBet(parity) {
+      currentBet = parity;
+    }
+
+    function spinRoulette() {
+      const betType = document.getElementById('betType').value;
+      const betAmount = parseInt(document.getElementById('betAmount').value);
+      let bet = currentBet;
+      if (betType === 'number') bet = parseInt(document.getElementById('numberBet').value);
+
+      const result = Math.floor(Math.random() * 37);
+      const color = result === 0 ? 'yeşil' : redNumbers.includes(result) ? 'kırmızı' : 'siyah';
+      const parity = result === 0 ? 'yok' : result % 2 === 0 ? 'çift' : 'tek';
+
+      if (betAmount > balance || betAmount <= 0) {
+        alert("Yetersiz bakiye veya geçersiz miktar!");
+        return;
+      }
+
+      let win = false;
+      let payout = 0;
+
+      if (betType === 'number' && bet === result) {
+        win = true;
+        payout = betAmount * 35;
+      } else if ((betType === 'color' && bet === color) || (betType === 'parity' && bet === parity)) {
+        win = true;
+        payout = (color === 'yeşil' ? 35 : 2) * betAmount;
+      }
+
+      let message = '';
+      if (win) {
+        balance += payout;
+        message = `🎉 Kazandınız!\n+${payout} BTC kazandınız!\nBahis: ${betAmount} BTC`;
+      } else {
+        balance -= betAmount;
+        message = `😞 Kaybettiniz.\n-${betAmount} BTC kaybettiniz.\nBahis: ${betAmount} BTC`;
+      }
+
+      document.getElementById('ball').textContent = `🎯 Çıkan: ${result} - ${color.toUpperCase()} - ${parity.toUpperCase()}`;
+      document.getElementById('balance').textContent = balance;
+
+      const resultBox = document.getElementById('resultBox');
+      resultBox.textContent = message;
+      resultBox.style.display = 'block';
+    }
+
+    showBetOptions();
+  </script>
+</body>
+</html>
